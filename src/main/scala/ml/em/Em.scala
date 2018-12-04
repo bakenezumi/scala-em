@@ -60,10 +60,11 @@ object Em extends App {
 //  return ( (1 / (np.sqrt(2 * math.pi) ** D * np.sqrt(np.linalg.det(sigma)))) *
 //    np.exp(-0.5 * np.linalg.solve(sigma, (x - mu)) @ (x - mu)).sum() )
 //  return f_
-  def f(mu: DenseMatrix[Double],
-        sigma: DenseMatrix[Double]): DenseMatrix[Double] => Double = x => {
-    1 / (pow(sqrt(2 * Math.PI), D) * sqrt(det(sigma))) *
-      exp(-0.5 * sum((sigma \ (x - mu)) matmul (x - mu)))
+  def f(mu: DenseVector[Double],
+        sigma: DenseVector[Double]): DenseVector[Double] => Double = x => {
+    val a = sigma.asDenseMatrix \ (x - mu).t
+    1 / (pow(sqrt(2 * Math.PI), D) * sqrt(det(sigma.asDenseMatrix))) *
+      exp(-0.5 * sum(a matmul (x - mu).asDenseMatrix.t))
   }
 
 //  def estep(x, mu, sigma, pi):
@@ -75,31 +76,44 @@ object Em extends App {
             mu: DenseMatrix[Double],
             sigma: DenseMatrix[Double],
             pi: DenseMatrix[Double]) = {
-    val pif: DenseMatrix[Double] = zipValues(pi, mu, sigma) { (pk, mk, sk) =>
-      val ff = f(mk, sk)
-      DenseMatrix.vertcat(
-        x(::, *)
-          .foldLeft(List.empty[DenseMatrix[Double]]) { (acc, xn) =>
-            pk * ff(xn.toDenseMatrix) :: acc
-          }
-          .reverse: _*)
+    DenseMatrix.zipMap_d
+    val pif: DenseMatrix[Double] = {
+      for (i <- 0 until K) yield {
+        val pk = pi(::, i)
+        val mk = mu(i, ::).t
+        val sk = sigma(i, ::).t
+        val ff = f(mk, sk)
+        ff(x(1, ::).t)
+      }
+      ???
     }
+
+//      zipValues(pi, mu, sigma) { (pk, mk, sk) =>
+//      val ff = f(mk, sk)
+//      DenseMatrix.vertcat(
+//        x(*, ::)
+//          .foldLeft(List.empty[DenseMatrix[Double]]) {
+//            case (acc, xn) =>
+//              pk * ff(xn) :: acc
+//          }
+//          .reverse: _*)
+//    }
     pif / sum(pif, Axis._0)
   }
 
-  val minx = min(x(*, ::))
-  val maxx = max(x(*, ::))
+  val minx = min(x(::, *)).t
+  val maxx = max(x(::, *)).t
   val rangex = abs(minx) + abs(maxx)
   val eqdev = rangex / (K + 1.0)
 
-  val mu = DenseMatrix.vertcat(
-    (0 until K).map(k => (eqdev * (k + 1.0) + minx).toDenseMatrix): _*)
+  val mu =
+    DenseMatrix((0 until K).map(k => eqdev * (k + 1.0) + minx): _*)
 
-  val sigma = DenseMatrix.vertcat(
-    (0 until K).map(k => (eqdev * (k + 1.0) + minx).toDenseMatrix): _*)
+  val sigma =
+    DenseMatrix((0 until K).map(k => eqdev * (k + 1.0) + minx): _*)
 
-  val pi = DenseVector.ones[Double](K) * (1.0 / K)
+  val pi = (DenseVector.ones[Double](K) * (1.0 / K)).asDenseMatrix
 
-  val gamma = estep(x, mu, sigma, pi.toDenseMatrix)
+  val gamma = estep(x, mu, sigma, pi)
 
 }
