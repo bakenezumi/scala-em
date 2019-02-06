@@ -82,7 +82,7 @@ object Em extends App {
       val pk = pi(i)
       val mk = mu(i, ::).t
       val sk = sigma(i, ::).t.toDenseVector
-      x(*, ::).map(f(mk, sk))
+      pk * x(*, ::).map(f(mk, sk))
     }): _*)
     sum(x(*, ::))
     pif / sum(pif)
