@@ -78,14 +78,14 @@ object Em extends App {
             sigma: DenseMatrix[Double],
             pi: DenseVector[Double]) = {
     DenseMatrix.zipMap_d
-    val pif = for (i <- 0 until K) yield {
+    val pif = DenseMatrix((for (i <- 0 until K) yield {
       val pk = pi(i)
       val mk = mu(i, ::).t
       val sk = sigma(i, ::).t.toDenseVector
-      pk * f(mk, sk)(x(1, ::).t)
-    }
-    val sumPif = pif.sum
-    DenseVector(pif.map(_ / sumPif): _*)
+      x(*, ::).map(f(mk, sk))
+    }): _*)
+    sum(x(*, ::))
+    pif / sum(pif)
   }
 //  def mstep(x, gamma):
 //  N = gamma.sum(axis=1)
@@ -95,13 +95,11 @@ object Em extends App {
 //  for gk, Nk, mk in zip(gamma, N, mu)])
 //  pi = N / N.sum()
 //  return (mu, sigma, pi)
-  def mstep(x: DenseMatrix[Double], gamma: DenseVector[Double])
+  def mstep(x: DenseMatrix[Double], gamma: DenseMatrix[Double])
     : (DenseMatrix[Double], DenseMatrix[Double], DenseVector[Double]) = {
     val N = sum(gamma)
-    val mu = gamma.asDenseMatrix matmul x / N
-    val sigma = for (i <- 0 until K) yield {
-      val gk = gamma(i)
-    }
+    val mu = gamma matmul x / N
+    val sigma = for (i <- 0 until K) yield {}
     ???
   }
 
@@ -119,5 +117,8 @@ object Em extends App {
   val pi = DenseVector.ones[Double](K) * (1d / K)
 
   val gamma = estep(x, mu, sigma, pi)
+
+  println("--")
+  println(gamma)
 
 }
