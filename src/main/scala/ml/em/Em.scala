@@ -97,12 +97,20 @@ object Em extends App {
 //  return (mu, sigma, pi)
   def mstep(x: DenseMatrix[Double], gamma: DenseMatrix[Double])
     : (DenseMatrix[Double], DenseMatrix[Double], DenseVector[Double]) = {
-    val N = sum(gamma(::, *))
-    println("****")
-    println(gamma)
-    println(N)
-    val mu = (gamma matmul x).map(_ / N.t)
-    val sigma = for (i <- 0 until K) yield {}
+    val N = sum(gamma(*, ::))
+    val mu = (gamma matmul x).t(*, ::).map(_ / N).t
+
+    val sigma = DenseMatrix((for (i <- 0 until K) yield {
+      val gk = gamma(i, ::).t.toDenseMatrix
+      val Nk = N(i)
+      val mk = mu(i, ::).t.toDenseMatrix
+      val xmk = x(*, ::).map(_ - mk.toDenseVector)
+      println("===")
+      println(gk * xmk * sum(xmk(::, *)).t)
+      gk * xmk * sum(xmk(::, *)).t / Nk
+    }): _*)
+
+    println(sigma)
     ???
   }
 
