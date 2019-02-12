@@ -84,8 +84,8 @@ object Em extends App {
       val sk = sigma(i, ::).t.toDenseVector
       pk * x(*, ::).map(f(mk, sk))
     }): _*)
-    sum(x(*, ::))
-    pif / sum(pif)
+    val sumPif = sum(pif(::, *)).t
+    pif(*, ::).map(_ / sumPif)
   }
 //  def mstep(x, gamma):
 //  N = gamma.sum(axis=1)
@@ -97,8 +97,11 @@ object Em extends App {
 //  return (mu, sigma, pi)
   def mstep(x: DenseMatrix[Double], gamma: DenseMatrix[Double])
     : (DenseMatrix[Double], DenseMatrix[Double], DenseVector[Double]) = {
-    val N = sum(gamma)
-    val mu = gamma matmul x / N
+    val N = sum(gamma(::, *))
+    println("****")
+    println(gamma)
+    println(N)
+    val mu = (gamma matmul x).map(_ / N.t)
     val sigma = for (i <- 0 until K) yield {}
     ???
   }
@@ -120,5 +123,7 @@ object Em extends App {
 
   println("--")
   println(gamma)
+
+  val (a, b, c) = mstep(x, gamma)
 
 }
